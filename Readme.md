@@ -172,7 +172,8 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
     ~~~
 
 * Por último, o Dockerfile:
-    ~~~ 
+>
+    ~~~dockerfile
       # Base image
       FROM node:alpine
 
@@ -207,7 +208,8 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
 > Para resolvermos isso, podemos duplicar a dependência COPY, separando o *package.json* do resto dos arquivos.
 > Isso agiliza muito nossos *reruns* e economiza recursos tanto do container quanto da máquina local.
 > Portanto, nosso Dockerfile otimizado para reruns será:
-    ~~~ 
+
+    ~~~dockerfile
       # Base image
       FROM node:alpine
 
@@ -224,3 +226,38 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
 > Sendo assim, não precisamos mais nos preocupar tanto com a quantidade de atualizações que faremos dentro do projeto.
 
 **Palavras/Frases do dia**:*Cache, Dockerfile, port mapping, minimizar rebuilds*
+
+## Dia 13 de dezembro de 2021 - Módulo 5
+### Docker Compose
+
+> Pegue o seguinte exemplo: uma imagem é criada para construir uma aplicação web. Para realizar essa aplicação, são necessários dois containers rodando ao mesmo tempo e se comunicando. O Docker Compose permite a criação/chamada de múltiplos containers ao mesmo tempo, permitindo comunicação entre eles.
+
+> Para isso, um novo tipo de arquivo deve ser criado, o `docker-compose.yml`.
+
+> o arquivo docker-compose será responsável por inicializar todos os containers envolvidos ao mesmo tempo e criar conexões entre eles. Sua sintaxe será basicamente:
+    ~~~yml
+      version: '3' # versão padrão
+      services:
+        redis-server: # primeiro container a ser chamado
+          image: 'redis' # exemplo de imagem a ser chamada
+        node-app: # segundo container a ser chamado
+          build: .
+          ports:
+            - "4001:8081" # porta local conectada à porta do container
+    ~~~
+
+> O comando inicial do docker-compose é `docker-compose up`, podendo haver a flag `--build` caso algum container tenha sofrido alterações e é necessário um rebuild.
+
+> O docker-compose também possui a possibilidade de rodar pelo background. Para isso, basta usar `docker-compose up -d`.
+
+> Caso queira parar um docker-compose, basta utilizar o comando `docker-compose down`. Esse comando irá parar e remover todos os containers iniciados pelo docker-compose. 
+
+> Podemos usar ainda o comando `docker-compose ps` para visualizar o status de todos os containers que existem dentro do docker-compose. 
+
+#### Políticas de Restart
+> Dentro do arquivo YML do docker-compose, existe uma tag de tratamento de crash de container, caso seja necessário usar. As regras são as seguintes:
+    
+    "no" (sempre entre aspas) | nunca tentar reiniciar o container se ele parar ou crashar
+    always | sempre tentar reiniciar o container se ele parar por qualquer motivo
+    on-failure | reiniciar apenas se o container parar por algum código de erro
+    unless-stopped | sempre reiniciar a menos que o desenvolvedor para-lo de forma forçada

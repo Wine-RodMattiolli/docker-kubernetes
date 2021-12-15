@@ -235,6 +235,7 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
 > Para isso, um novo tipo de arquivo deve ser criado, o `docker-compose.yml`.
 
 > o arquivo docker-compose será responsável por inicializar todos os containers envolvidos ao mesmo tempo e criar conexões entre eles. Sua sintaxe será basicamente:
+>    
     ~~~yml
       version: '3' # versão padrão
       services:
@@ -257,7 +258,69 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
 #### Políticas de Restart
 > Dentro do arquivo YML do docker-compose, existe uma tag de tratamento de crash de container, caso seja necessário usar. As regras são as seguintes:
     
-    "no" (sempre entre aspas) | nunca tentar reiniciar o container se ele parar ou crashar
-    always | sempre tentar reiniciar o container se ele parar por qualquer motivo
-    on-failure | reiniciar apenas se o container parar por algum código de erro
-    unless-stopped | sempre reiniciar a menos que o desenvolvedor para-lo de forma forçada
+   | "no" (sempre entre aspas) | nunca tentar reiniciar o container se ele parar ou crashar |
+   | always | sempre tentar reiniciar o container se ele parar por qualquer motivo          |
+   | on-failure | reiniciar apenas se o container parar por algum código de erro            |
+   | unless-stopped | sempre reiniciar a menos que o desenvolvedor para-lo de forma forçada |
+
+## Dia 15 de dezembro de 2021 - Módulo 6
+### Creating a Production-Grade Workflow
+
+> Nessa seção, é apresentado um dos fluxos de trabalho (workflow) mais usuais do momento.
+
+> Esse Workflow consiste no seguinte: `Development --> Testing --> Deployment`. Basicamente, desenvolver a aplicação em máquina local, testar o código e depois realizar o deploy. Porém várias sub-etapas são necessárias para manter um bom workflow.
+
+1. Development
+    * Dev cria e modifica a branch feature;
+    * Faz mudanças em quaisquer outras branches que não são Master;
+    * Push para o GitHub;
+    * Cria Pull Request para realizar merge com a branch Master.
+  
+2. Testing
+    * Push do código da branch master para o **Travis CI**;
+      > Travis CI é um Provedor de Integração Contínua, é nele que iremos rodar vários testes.
+    * Roda os testes;
+    * Se tudo estiver OK, realiza merge com todas as mudanças necessárias que os testes geraram para a branch master.
+  
+3. Production/Deployment
+   * Push do código do Travis CI;
+   * Roda outros testes, caso haja necessidade;
+   * Realiza o Deploy para a AWS, especificamente para o AWS Elastic Beanstalk
+
+#### Aonde entra o Docker nessa brincadeira?
+> Percebemos que, na lista de passos acima, não é citado em momento algum o Docker. Bom, ele não é mesmo um requisito para que possamos fazer todas as tarefas do Workflow, porém é uma ferramenta poderosíssima para facilitar alguns passos do development. 
+
+#### Docker Volumes
+> Nessa seção, treinamos o workflow em uma aplicação React.JS + Docker. Dessa forma, vemos que existe uma dificuldade de fazer a atualização em tempo real das mudanças realizadas dentro da aplicação react. Sendo assim, o conceito de Docker Volume é aplicado.
+
+> A ideia é parecida com o port mapping `(que inclusive deve ser usado também, criando a conexão 3000:3000)`, fazendo com que dentro do container fique referenciais às pastas da máquina local.
+
+1. Dockerfile.dev
+  > Diferente do que vimos anteriormente, aqui devemos criar um Dockerfile voltado ao desenvolvimento e não o comum, voltado à produção (algo que a gente sente a diferença, só não consegue explicar).
+  > A sintaxe do Dockerfile.dev nesse caso ficou a seguinte:
+>   
+      ~~~dockerfile
+        FROM node:16-alpine
+        
+        USER node
+        
+        RUN mkdir -p /home/node/app
+        WORKDIR /home/node/app
+        
+        COPY --chown=node:node ./package.json ./
+        RUN npm install
+        COPY --chown=node:node ./ ./
+        
+        CMD ["npm", "run", "start"]
+      ~~~
+
+  > O build será: `docker build -f Dockerfile.dev .`
+  > A flag -f serve para indicar o arquivo exato a ser construído.
+
+2. Docker run de volumes
+   > Nesse projeto em específico, para economizar tempo e espaço de memória, apagamos a pasta node_modules na máquina local.
+   > Para rodar a imagem, precisamos da seguinte sintaxe: `docker run -p 3000:3000 -v /home/node/app/node_modules -v $(pwd):/home/node/app <IMAGEM-ID>`.
+   > A primeira flag -v impede que o docker procure dentro da máquina local a pasta node_modules, enquanto que a segunda flag -v direciona os referenciais do container para o lugar certo.
+
+
+**Palavras/frases do dia:** *Workflow, development, testing, deployment, branches, github, travis CI, AWS, docker volume*

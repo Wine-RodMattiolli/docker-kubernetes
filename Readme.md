@@ -258,10 +258,12 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
 #### Políticas de Restart
 > Dentro do arquivo YML do docker-compose, existe uma tag de tratamento de crash de container, caso seja necessário usar. As regras são as seguintes:
     
-   | "no" (sempre entre aspas) | nunca tentar reiniciar o container se ele parar ou crashar |
-   | always | sempre tentar reiniciar o container se ele parar por qualquer motivo          |
-   | on-failure | reiniciar apenas se o container parar por algum código de erro            |
-   | unless-stopped | sempre reiniciar a menos que o desenvolvedor para-lo de forma forçada |
+   |       Terminologia        |                              Significado                              |
+   | :-----------------------: | :-------------------------------------------------------------------: |
+   | "no" (sempre entre aspas) |      nunca tentar reiniciar o container se ele parar ou crashar       |
+   |          always           | sempre tentar reiniciar o container se ele parar por qualquer motivo  |
+   |        on-failure         |    reiniciar apenas se o container parar por algum código de erro     |
+   |      unless-stopped       | sempre reiniciar a menos que o desenvolvedor para-lo de forma forçada |
 
 ## Dia 15 de dezembro de 2021 - Módulo 6
 ### Creating a Production-Grade Workflow
@@ -324,3 +326,57 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
 
 
 **Palavras/frases do dia:** *Workflow, development, testing, deployment, branches, github, travis CI, AWS, docker volume*
+
+## Dia 17 de dezembro de 2021 - Módulo 7
+### Continuous Integration and Deployment
+
+> Nesse Módulo vemos como fazer uma integração do projeto em uma máquina local com o GitHub. Além disso, vemos como conectar o GitHub com o provedor de CI, nesse caso, é o Travis CI.
+> Sabe-se que a equipe de DevOps da Wine não utiliza o Travis CI em seu processo de deploy, logo o que será descrito nesse módulo é apenas para fins de aprendizado.
+
+> O procedimento básico de testagem e deployment utilizando o Travis CI é o seguinte:
+ 1. Indicar ao Travis CI qual cópia do docker running nós precisamos;
+ 2. Construir a Imagem utilizando o Dockerfile.dev;
+ 3. Rodar e testar com o Travis;
+ 4. Realizar o deploy para a AWS.
+
+> Para realizar o procedimento acima, precisamos indicar como o Travis CI irá realizar a leitura do projeto correto e como irá rodar os testes, entre outras configurações. Para isso, criamos dentro da pasta do projeto em questão um arquivo `.travis.yml`.
+> Esse arquivo yml terá a seguinte sintaxe:
+  ~~~yml
+    sudo: required
+    services:
+      - docker
+
+    before_install:
+      - docker build -t <ID Docker>/<GitHub Repo> -f Dockerfile.dev .
+  
+    script:
+        - docker run -e CI=true USERNAME/docker-react npm run test -- --coverage
+  ~~~
+
+> Logo após realizar o commit e o push das alterações realizadas na máquina local para o GitHub, rodamos os testes no Travis CI.
+> Visto que os testes foram bem sucedidos, podemos ir para a AWS.
+
+### AWS Elastic Beanstalk
+
+> Após realizar login na AWS, podemos iniciar um novo app e, a partir dele, um novo Environment, aonde constará o projeto em questão que você deseja realizar um deploy. 
+> Dentro da AWS Environment, nosso container ficará sitiado em uma Virtual Machine. 
+
+> Após a criação do Environment, voltamos ao arquivo `.travis.yml` e acrescentamos logo abaixo do script:
+  ~~~yml
+    provider: elasticbeanstalk
+    region: "<região-escolhida>" # Ex: us-west-2
+    app: "<nome-do-app>"
+    env: "<nome-do-environment>"
+    bucket_name: "<url-do-app-gerado-automaticamente>"
+    bucket_path: "<nome-do-app>" # Por default, usa-se o nome do app
+    on:
+      branch: master # branch do seu repo github que será usada para deploy
+  ~~~
+
+> O próximo passo é criar uma API key. O passo a passo para criar uma nova chave é vista no vídeo 101 do curso.
+
+> Nos vídeos seguintes do curso, vemos como criar uma nova branch em um repo GitHub, usando `git checkout -b feature`. Além disso, aprendemos como é o processo de pull request dentro do dashboard do github e como o pull request conecta a branch feature com a master, permitindo então que o Travis CI faça os testes e envie logo mais para a AWS Elastic Beanstalk.
+
+> Os três últimos arquivos do Módulo 7 são um compilado dos passos necessários para toda conexão entre Máquina Local --> GitHub --> Travis CI --> AWS.
+
+**Palavras/Frases do dia**: *AWS Elastic Beanstalk, Travis CI, GitHub, Branches, .travis.yml, running test, deploy*. 

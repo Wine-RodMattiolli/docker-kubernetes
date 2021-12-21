@@ -380,3 +380,57 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
 > Os três últimos arquivos do Módulo 7 são um compilado dos passos necessários para toda conexão entre Máquina Local --> GitHub --> Travis CI --> AWS.
 
 **Palavras/Frases do dia**: *AWS Elastic Beanstalk, Travis CI, GitHub, Branches, .travis.yml, running test, deploy*. 
+
+## Dia 21 de dezembro de 2021 - Módulo 9
+### Section 9 - Dockerizing Multiple Services
+
+> A seção 8 do curso foi pulada pois o foco não era em Docker, e sim na construção de um aplicativo JavaScript.
+> Para o início do módulo 9, foi realizado o download do arquivo `checkpoint.zip`.
+
+#### Construíndo docker-compose com postgres
+> No arquivo checkpoint.zip contém três pastas: worker, server e client. Em cada uma delas, construímos o arquivo `Dockerfile.dev` padrão, já mostrado acima.
+> Na pasta root do projeto (aqui chamado de complex), criamos o arquivo `docker-compose.yml` com novos atributos:
+  ~~~yml
+  version: '3'
+  services:
+  postgres:
+    image: 'postgres:latest'
+    environment:
+      - POSTGRES_PASSWORD=postgres_password
+  redis:
+    image: 'redis:latest'
+  server:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./server
+    volumes:
+      - /home/node/app/node_modules
+      - ./server:/home/node/app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PGUSER=postgres
+      - PGHOST=postgres
+      - PGDATABASE=postgres
+      - PGPORT=5432
+  client: 
+    stdin_open: true
+    build: 
+      dockerfile: Dockerfile.dev
+      context: /client
+    volumes:
+      - /home/node/app/node_modules
+      - ./client:/home/node/app
+  worker:
+    build: 
+      dockerfile: Dockerfile.dev
+      context: worker
+    volumes:
+      -  /home/node/app/node_modules
+      - ./worker:/home/node/app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+  ~~~
+> Atenção especial para o atributo context: é ele quem sinaliza qual Dockerfile.dev será utilizado na build do container.]
+> Atenção também para o environment, ele determina certas permissões que seu container precisa ter para que funcione bem.

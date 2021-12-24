@@ -391,46 +391,134 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
 > No arquivo checkpoint.zip contém três pastas: worker, server e client. Em cada uma delas, construímos o arquivo `Dockerfile.dev` padrão, já mostrado acima.
 > Na pasta root do projeto (aqui chamado de complex), criamos o arquivo `docker-compose.yml` com novos atributos:
   ~~~yml
-  version: '3'
-  services:
-  postgres:
-    image: 'postgres:latest'
-    environment:
-      - POSTGRES_PASSWORD=postgres_password
-  redis:
-    image: 'redis:latest'
-  server:
-    build:
-      dockerfile: Dockerfile.dev
-      context: ./server
-    volumes:
-      - /home/node/app/node_modules
-      - ./server:/home/node/app
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - PGUSER=postgres
-      - PGHOST=postgres
-      - PGDATABASE=postgres
-      - PGPORT=5432
-  client: 
-    stdin_open: true
-    build: 
-      dockerfile: Dockerfile.dev
-      context: /client
-    volumes:
-      - /home/node/app/node_modules
-      - ./client:/home/node/app
-  worker:
-    build: 
-      dockerfile: Dockerfile.dev
-      context: worker
-    volumes:
-      -  /home/node/app/node_modules
-      - ./worker:/home/node/app
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+    version: '3'
+    services:
+      postgres:
+        image: 'postgres:latest'
+        environment:
+          - POSTGRES_PASSWORD=postgres_password
+      redis:
+        image: 'redis:latest'
+      nginx:
+        restart: always
+        depends_on:
+          - api
+          - client
+        build:
+          dockerfile: Dockerfile.dev
+          context: ./nginx
+        ports:
+          - '3050:80'
+      api:
+        build:
+          dockerfile: Dockerfile.dev
+          context: ./server
+        volumes:
+          - /home/node/app/node_modules
+          - ./server:/home/node/app
+        environment:
+          - REDIS_HOST=redis
+          - REDIS_PORT=6379
+          - PGUSER=postgres
+          - PGHOST=postgres
+          - PGDATABASE=postgres
+          - PGPORT=5432  
+      client: 
+        stdin_open: true
+        build: 
+          dockerfile: Dockerfile.dev
+          context: ./client
+        volumes:
+          - /home/node/app/node_modules
+          - ./client:/home/node/app  
+      worker:
+        build: 
+          dockerfile: Dockerfile.dev
+          context: ./worker
+        volumes:
+          -  /home/node/app/node_modules
+          - ./worker:/home/node/app
+        environment:
+          - REDIS_HOST=redis
+          - REDIS_PORT=6379
   ~~~
 > Atenção especial para o atributo context: é ele quem sinaliza qual Dockerfile.dev será utilizado na build do container.]
 > Atenção também para o environment, ele determina certas permissões que seu container precisa ter para que funcione bem.
+> Outra coisa que devemos olhar é a presença do serviço **nginx** para multiroteamento. Vemos o atributo restart: always nele pois, caso ocorra algum erro, o container reinicie automaticamente para que não ocorra o crash dos outros serviços relacionados. 
+
+### Nginx
+> Criamos na pasta do projeto uma nova pasta direcionada para o multiroteamento. Nela, foi criado o arquivo `default.conf` na intenção de cuidar de como os serviços serão conectados dentro do container. Todas as portas de entrada e saída de dados estão relacionadas lá.
+
+## Dia 22 a 24 de dezembro de 2021 - Módulo 10
+### A Continuous Integration Workflow for Multiple Images
+
+> Aqui aprendemos como fazer a integração com o Travis CI e o Elastic Beanstalk da AWS.
+> Nada de muito novo, apenas algumas configuraçõs dentro do Nginx para manter o roteamento de todas as portas locais configuradas para acessar as portas dentro do container.
+
+# Dia 23 de dezembro de 2021 - Módulo 12 - Kubernetes
+### Grande dia, família! Onwards to Kubernetes!
+
+> Começamos a falar sobre Kubernetes da mesma forma que começamos com o Docker: O que é e por que usar?
+
+1. **O que é Kubernetes?**
+   > Pegue como exemplo nosso último projeto de calcular index da sequência de Fibonacci. Quando realizamos deploy para a AWS Elastic Beanstalk, subimos quatro containers (nginx, server, client e worker). Para somente uma máquina, tudo vai funcionar muito bem, mas e para várias? Qual é a escalabilidade do meu aplicativo?
+   > Então, para resolver essa situação, utilizamos Kubernetes com seu conceito de cluster e nós, facilitando que vários usuários rodem diferentes containers de acordo com sua necessidade.
+
+2. **Por que usar Kubernetes?**
+   > Utilizando Kubernetes, você economiza recursos, controla o tráfego de acessos a suas imagens e containers e permite que diferentes imagens e containers rodem ao mesmo tempo.
+
+#### Kubernetes em Desenvolvimento e Produção
+
+1. Development
+  > No desenvolvimento de aplicações com Kubernetes, dentro da sua máquina local, usaremos uma aplicação chamada **minikube**. O minikube serve para criarmos o cluster.
+2. Production
+  > Na produção do cluster de forma a ser acessada por outras máquinas, precisamos de gerenciadores como a Amazon Elastic Container Service for Kubernetes, ou carinhosamente chamado EKS.
+
+> No desenvolvimento local, e apenas aqui, usaremos o minikube. Depois que o cluster já está ingressado dentro de uma máquina virtual, iremos gerenciar seus containers com o **kubectl**.
+
+> Logo, a sequência de desenvolvimento e produção se dá por: `1) minikube criando o cluster na máquina virtual --> 2) Enviar para uma máquina virtual --> 3) gerenciar o cluster com kubectl` 
+
+#### Multi-client Kubernetes
+
+> No desenvolvimento de uma aplicação que visa atender vários clientes ao mesmo tempo, devemos nos atentar a três requisitos básicos:
+
+1. Docker Hub
+  > Tenha certeza que sua imagem está hospedada no docker hub <https://hub.docker.com>
+  > Nesse teste, usaremos a imagem do ministrante do curso, `stephengrider/multi-client`
+
+2. Fazer um arquivo de configuração para criar o container
+  > Criaremos um novo projeto chamado `simplek8s` e, nele, o arquivo `client-pod.yaml`.
+
+3. Fazer um arquivo de configuração para configurar a rede
+  > Dentro do projeto, criaremos o arquivo `client-node-port.yaml`.
+
+### Rodando Containers em Pods
+
+> No mundo do kubernetes, não iremos realizar deploy em um único container, seja ele criado por docker-compose ou não. Para isso, usamos o que chamamos de Pods.
+
+> Os Pods são a mínima parte permitida a se realizar deploys dentro do kubernetes, e todos os containers de relações intrínsecas a um container principal.
+
+> Os Pods ficam "salvos" dentro da máquina virtual que é criada em nossa máquina local, quando rodamos o minikube. 
+
+> Para configurarmos o Pod, usamos o arquivo `client-pod.yaml`. Nesse arquivo determinamos o nome do Pod, o tipo de componente de trabalho que ele irá atuar, os containers que ficarão contidos nele e a porta de acesso do mundo externo à ele.
+
+> O serviço de acesso ao Pod é muito importante e é configurado pelo arquivo `client-node-port.yaml`
+
+#### Service Config File
+
+> Como foi dito acima, para que o mundo externo tenha contato com o Pod dentro do Kubernetes node, contido na máquina virtual criada pelo minikube dentro de nossa máquina local, é necessário que se configure o tipo de serviço que será utilizado para tal.
+
+> Os services são responsáveis por criar as conexões do cluster com o mundo externo e existem quatro tipos deles: `ClusterIP, NodePort, LoadBalancer e Ingress`. Nesse teste usaremos o NodePort, único serviço com funções de desenvolvimento.
+
+### Coisas importantes sobre o Kubernetes
+
+1. Kubernetes é um sistema para realizar deploys de aplicativos em containers;
+2. Nós (Nodes) são máquinas individuais (locais ou VM) que vão rodar os containers;
+3. Masters são máquinas (locais ou VM) com um set de programações de gerenciamento de Nodes;
+4. Kubernetes não cria suas imagens, ele pega de algum outro lugar (Ex: Docker Hub);
+5. O master decide aonde rodar cada container. Cada nodecan roda um conjunto diferente de containers;
+6. Para realizar deploy de algo, precisamos carregar nossos comandos para o master utilizando arquivos de configuração (Ex: client-pod.yaml);
+7. O master trabalha constantemente monitorando os nodes para manter os estados de aceitação.
+   
+> Outra coisa importante a ser decidida é o método de entrega de ordens para o master: imperativa ou declarativa.
+> Segundo o curso, em qualquer documentação será ensinada a forma imperativa, porém engenheiros que trabalham com kubernetes preferem, em grande maioria, trabalhar com ordens declarativas.

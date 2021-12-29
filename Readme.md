@@ -449,13 +449,13 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
 ### Nginx
 > Criamos na pasta do projeto uma nova pasta direcionada para o multiroteamento. Nela, foi criado o arquivo `default.conf` na intenção de cuidar de como os serviços serão conectados dentro do container. Todas as portas de entrada e saída de dados estão relacionadas lá.
 
-## Dia 22 a 24 de dezembro de 2021 - Módulo 10
+## Dia 22 de dezembro de 2021 - Módulo 10
 ### A Continuous Integration Workflow for Multiple Images
 
 > Aqui aprendemos como fazer a integração com o Travis CI e o Elastic Beanstalk da AWS.
 > Nada de muito novo, apenas algumas configuraçõs dentro do Nginx para manter o roteamento de todas as portas locais configuradas para acessar as portas dentro do container.
 
-# Dia 23 de dezembro de 2021 - Módulo 12 - Kubernetes
+# Dia 23 e 24 de dezembro de 2021 - Módulo 12 - Kubernetes
 ### Grande dia, família! Onwards to Kubernetes!
 
 > Começamos a falar sobre Kubernetes da mesma forma que começamos com o Docker: O que é e por que usar?
@@ -522,3 +522,48 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
    
 > Outra coisa importante a ser decidida é o método de entrega de ordens para o master: imperativa ou declarativa.
 > Segundo o curso, em qualquer documentação será ensinada a forma imperativa, porém engenheiros que trabalham com kubernetes preferem, em grande maioria, trabalhar com ordens declarativas.
+
+## Dia 27 de dezembro de 2021 - Módulo 13
+### Section 13 - Maintaining Sets id Containers with Deployments
+
+> Nessa seção, aprendemos como realizar updates em nossos containers utilizando Kubernetes.
+> Para realizar updates, construimos um novo config file, chamado agora de `client-deployment.yaml`. Esse arquivo permite criar novos pods automaticamente, apenas configurando algo chamado de *Templates*.
+> Os Templates são um conjunto de instruções genéricas que formam a "receita" do pod que deve ser criado.
+
+#### Triggers
+
+> Para realizar deploy de updates de uma imagem usando kubernetes, as coisas não são tão simples quanto deveriam ser. Uma série de procedimentos devem ser tomados para tal e qualquer pequeno deslize pode causar uma grande dor de cabeça.
+> O primeiro problema é que devemos indicar manualmente qual é a nova versão da imagem que sofreu o update, senão toda operação realizada será prontamente recusada;
+> Por isso, o curso nos dá três soluções para realizar o deploy da nova imagem:
+  1. Deletar manualmente os pods que sofrerão o deploy e recria-los já com a nova versão.
+    * Problema: Além de ser bem trabalhoso, você pode acabar deletando pods desnecessáriamente, causando ainda mais transtornos.
+  
+  2. Alterar manualmente a nova versão pelo config file por meio de tags de versão `image: <docker-ID>/<nome-da-imagem>:<tag-de-versão>`.
+    * Problema: Apesar de ser mais seguro, adiciona um passo extra no processo de deployment, pois eu tenho que gerar primeiro um docker build da nova versão da imagem pra depois gerar um apply do kubectl.
+  
+  3. Usar de comandos imperativos para realizar o update da imagem na versão de deployment desejada.
+    * Problema: Usar de comandos imperativos. 
+  
+#### Realizar deployment de updates com comandos imperativos
+
+> Para vamos seguir os seguintes passos:
+
+  |                      Update de versão de imagem                       |
+  | :-------------------------------------------------------------------: |
+  |                 mudar o deploy para a base novamente                  |
+  |                  realizar as alterações necessárias                   |
+  |         Colocar uma tag de versão e enviar para o docker hub          |
+  | rodar o comando do kubectl forçando o deploy da nova versão da imagem |
+
+> usamos o comando `docker tag` para indicar que aquela imagem será taggeada, depois rodamos o `docker build -f <NOME_CONTAINER>:<VERSÃO>`. O número da versão é decidida aqui. 
+
+> depois, já no kubernetes, rodaremos o seguinte comando:
+  `kubectl set image <TIPO_OBJETO (o kind)>/<NOME_OBJ> <NOME_CONTAINER>=<NOVA IMAGEM *ex: stephengrider/mul...:v2*>`
+
+> Após o comando ser rodado, uma nova imagem será sobrescrita dentro do custler e os novos pods, atualizados.
+
+## Módulo 14 - A Multi-Container App with Kubernetes
+
+> Nesse módulo, aprenderemos como utilizar os serviços de Ingress e ClusterIP.
+> Construimos um nó com vários pods utilizando as imagens `multi-client, multi-worker, multi-server, redis e postgres`.
+> Para cada imagem, criamos dois configs files, os *deployments* e os *cluster-ip-service*. Todos bem padrões e genéricos, mas extremamente necessários para o funcionamento e aprendizado.

@@ -521,9 +521,10 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
 7. O master trabalha constantemente monitorando os nodes para manter os estados de aceitação.
    
 > Outra coisa importante a ser decidida é o método de entrega de ordens para o master: imperativa ou declarativa.
+
 > Segundo o curso, em qualquer documentação será ensinada a forma imperativa, porém engenheiros que trabalham com kubernetes preferem, em grande maioria, trabalhar com ordens declarativas.
 
-## Dia 27 de dezembro de 2021 - Módulo 13
+## Dia 27 a 31 de dezembro de 2021 - Módulo 13
 ### Section 13 - Maintaining Sets id Containers with Deployments
 
 > Nessa seção, aprendemos como realizar updates em nossos containers utilizando Kubernetes.
@@ -533,7 +534,9 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
 #### Triggers
 
 > Para realizar deploy de updates de uma imagem usando kubernetes, as coisas não são tão simples quanto deveriam ser. Uma série de procedimentos devem ser tomados para tal e qualquer pequeno deslize pode causar uma grande dor de cabeça.
+
 > O primeiro problema é que devemos indicar manualmente qual é a nova versão da imagem que sofreu o update, senão toda operação realizada será prontamente recusada;
+
 > Por isso, o curso nos dá três soluções para realizar o deploy da nova imagem:
   1. Deletar manualmente os pods que sofrerão o deploy e recria-los já com a nova versão.
     * Problema: Além de ser bem trabalhoso, você pode acabar deletando pods desnecessáriamente, causando ainda mais transtornos.
@@ -546,7 +549,7 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
   
 #### Realizar deployment de updates com comandos imperativos
 
-> Para vamos seguir os seguintes passos:
+> Para tal vamos realizar os seguintes passos:
 
   |                      Update de versão de imagem                       |
   | :-------------------------------------------------------------------: |
@@ -560,10 +563,48 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
 > depois, já no kubernetes, rodaremos o seguinte comando:
   `kubectl set image <TIPO_OBJETO (o kind)>/<NOME_OBJ> <NOME_CONTAINER>=<NOVA IMAGEM *ex: stephengrider/mul...:v2*>`
 
-> Após o comando ser rodado, uma nova imagem será sobrescrita dentro do custler e os novos pods, atualizados.
+> Após o comando ser rodado, uma nova imagem será sobrescrita dentro do cluster e os novos pods, atualizados.
 
 ## Módulo 14 - A Multi-Container App with Kubernetes
 
 > Nesse módulo, aprenderemos como utilizar os serviços de Ingress e ClusterIP.
+
 > Construimos um nó com vários pods utilizando as imagens `multi-client, multi-worker, multi-server, redis e postgres`.
+
 > Para cada imagem, criamos dois configs files, os *deployments* e os *cluster-ip-service*. Todos bem padrões e genéricos, mas extremamente necessários para o funcionamento e aprendizado.
+
+#### Kubernetes Volumes
+
+> Um dos serviços que o kubernetes oferece é a criação de volumes para que nossos pods os acessem quando necessário. Existem três tipos de Volumes mas iremos focar no `Persistent Volume Claim (PVC)`.
+
+> Quando trabalhamos com Persistent Volume Claim, precisamos identificar aonde os volumes estarão acessíveis para nossos pods. Sendo assim, novos conceitos aparecem, as `variáveis de ambiente.`
+
+#### Variáveis de Ambiente (Environment Variables)
+
+> No nosso modelo de teste, queremos que um Postgres Pod conecte-se com um PVC. Para isso, precisamos criar um ambiente no qual ele acesse esse volume com segurança e coesão, para que, mesmo que o Pod por algum motivo quebre, quando ele for reiniciado, consiga automaticamente se conectar com seu Volume. 
+
+> Logo, entra em cena algumas das variáveis de ambiente que irão permitir essa conexão:
+  **REDIS_HOST, REDIS_PORT, PGUSER, PGHOST, PGPORT, PGDATABASE E POR ÚLTIMO, PGPASSWORD**.
+
+#### Secrets
+
+> Tirando o PGPASSWORD, todas as outras variáveis de ambiente são construídas apneas nos configs files. Entretanto, para configurarmos um PASSWORD precisamos primeiramente construir um secret.
+
+> Secrets são atributos do kubernetes que nos permite atribuir chaves de acesso para determinadas aplicações, garantindo a segurança do nosso cluster. 
+
+> Para criar um secret, um dos modos é enviando um comando imperativo via terminal:
+  `kubectl crate secret <generic> <pgpassword> --from-literal <PGPASSWORD=blablabla>`
+
+> O que está entre <> são atributos do comando definidos por quem está criando o secret.
+
+> Após a criação do secret, podemos utiliza-lo nos configs files da melhor forma possível.
+
+## dia 03 de janeiro de 2022 - Módulo 15
+### Section 15 - Handling Traffic with Ingress Controllers
+
+> Na última seção do curso que devemos assitir, vamos aprender mais sobre Ingress.
+
+> De início o instrutor do curso já nos alerta sobre duas coisas muito importantes:
+  1. Usar a documentação correta!
+    * Devemos sempre usar a documentação do ingress-nginx no github. <github.com/kubernetes/ingress-nginx>
+  2. Usar configurações para Google Cloud

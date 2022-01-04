@@ -608,3 +608,9 @@ Caso tentássemos usar o comando 'echo' no contêiner hello-world, por exemplo, 
   1. Usar a documentação correta!
     * Devemos sempre usar a documentação do ingress-nginx no github. <github.com/kubernetes/ingress-nginx>
   2. Usar configurações para Google Cloud
+
+#### Ingress Config File
+> Podemos configurar o Ingress construindo um config file, mesmo procedimento que usamos para configurar as outras coisas.
+
+### Com isso, o fim de nossa primeira jornada!
+> Quaisquer atualizações que vierem posteriormente, volto a atualizar esse documento.
